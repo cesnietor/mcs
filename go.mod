@@ -20,3 +20,5 @@ require (
 	github.com/unrolled/secure v1.0.7
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 )
+
+replace github.com/minio/minio => /Users/cesnietor/go/src/github.com/cesnietor/minio
