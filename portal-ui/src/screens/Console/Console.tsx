@@ -59,6 +59,7 @@ import Users from "./Users/Users";
 import Groups from "./Groups/Groups";
 import ListNotificationEndpoints from "./NotificationEndopoints/ListNotificationEndpoints";
 import { Button, LinearProgress } from "@material-ui/core";
+import Trace from "./Trace/Trace";
 
 function Copyright() {
   return (
@@ -293,6 +294,7 @@ class Console extends React.Component<
                   path="/notification-endpoints"
                   component={ListNotificationEndpoints}
                 />
+                <Route exct path="/trace" component={Trace} />
                 <Route exact path="/">
                   <Redirect to="/dashboard" />
                 </Route>
