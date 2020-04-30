@@ -30,14 +30,16 @@ import (
 // Authorization Header needs to be like "Authorization Bearer <jwt_token>"
 func Authenticate(r *http.Request) (*auth.DecryptedClaims, error) {
 	// Get Auth token
-	reqToken := r.Header.Get("Authorization")
+	// reqToken := r.Header.Get("Authorization")
+	reqToken := r.Header.Get("Sec-WebSocket-Protocol")
 	// reqToken comes as "Bearer <token>"
-	splitToken := strings.Split(reqToken, "Bearer")
-	if len(splitToken) <= 1 {
-		return nil, errors.New(http.StatusBadRequest, "Authentication Header not valid")
-	}
+	// splitToken := strings.Split(reqToken, "Bearer")
+	// if len(splitToken) <= 1 {
+	// 	return nil, errors.New(http.StatusBadRequest, "Authentication Header not valid")
+	// }
 
-	reqToken = strings.TrimSpace(splitToken[1])
+	// reqToken = strings.TrimSpace(splitToken[1])
+	reqToken = strings.TrimSpace(reqToken)
 
 	// Perform authentication before upgrading to a Websocket Connection
 	claims, err := auth.JWTAuthenticate(reqToken)

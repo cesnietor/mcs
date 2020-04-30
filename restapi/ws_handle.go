@@ -117,13 +117,24 @@ func serveWS(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// upgrades the HTTP server connection to the WebSocket protocol.
-	conn, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		log.Print("error on upgrade: ", err)
-		errors.ServeError(w, req, err)
-		return
+	//// <------ MODIFIED WORKAROUND
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true
 	}
+	reqToken := req.Header.Get("Sec-WebSocket-Protocol")
+	// upgrades the HTTP server connection to the WebSocket protocol.
+	conn, err := upgrader.Upgrade(w, req, http.Header{
+		"Sec-WebSocket-Protocol": {reqToken},
+	})
+	//// ---> end of WORKAROUND
+
+	// upgrades the HTTP server connection to the WebSocket protocol.
+	// conn, err := upgrader.Upgrade(w, req, nil)
+	// if err != nil {
+	// 	log.Print("error on upgrade: ", err)
+	// 	errors.ServeError(w, req, err)
+	// 	return
+	// }
 
 	// TODO: CHANGE ! to use newMAdminClient once Assume Role is
 	// allowed to do Trace use jwt on ws.
