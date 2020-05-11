@@ -21,18 +21,50 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
+	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/minio/minio/pkg/madmin"
+	mc "github.com/minio/mc/cmd"
 )
 
-const logTimeFormat string = "15:04:05 MST 01/02/2006"
+type watchParams struct {
+	BucketName string
+	mc.WatchParams
+}
+
+// getParamsFromWsWatchPath gets bucket name, events, prefix, suffix from a websocket
+// watch path if defined.
+// The path should come as : `/watch/bucket1?prefix=&suffix=.jpg&events=put,get`
+func getParamsFromWsWatchPath(wsPath string) watchParams {
+	wParams := watchParams{}
+	re := regexp.MustCompile(`(^/watch/)(.*?)(\?.*?$|$)`)
+	matches := re.FindAll([]byte(wsPath), -1)
+	// matches comes as e.g.
+	// [["...", "/watch/" "bucket1" "?prefix=&suffix=.jpg&events=put,get"]]
+	// [["/watch/bucket1" "/watch/" "bucket1" ""]]
+	// [["/watch/" "/watch/" "" ""]]
+	if len(matches[0]) > 2 {
+		// bucket name is on the second group, third position
+		wParams.BucketName = strings.TrimSpace(string(matches[0][2]))
+	}
+	// if matched query params (comes in third group) get fourth position
+	if len(matches[0]) > 3 {
+		q, err := url.ParseQuery(strings.TrimPrefix("?", string(matches[0][3])))
+		if err != nil {
+			log.Fatal(err)
+		}
+		wParams.Events = strings.Split(q.Get("events"), ",")
+		wParams.Prefix = q.Get("prefix")
+		wParams.Suffix = q.Get("suffix")
+	}
+	return wParams
+}
 
 // startWatch
-func startWatch(conn WSConn, client MinioAdmin) (mError error) {
+func startWatch(wsc *wsS3Client, params watchParams) (mError error) {
 	// a WaitGroup waits for a collection of goroutines to finish
 	wg := sync.WaitGroup{}
 	// a cancel context is needed to end all goroutines used
@@ -40,12 +72,12 @@ func startWatch(conn WSConn, client MinioAdmin) (mError error) {
 	defer cancel()
 
 	// Set number of goroutines to wait. wg.Wait()
-	// waitsuntil counter is zero (all are done)
+	// waits until counter is zero (all are done)
 	wg.Add(3)
 	// start go routine for reading websocket heartbeat
-	readErr := wsReadCheck(ctx, &wg, conn)
-	// send Stream of Console Log Info to the ws c.connection
-	logCh := sendConsoleLogInfo(ctx, &wg, conn, client)
+	readErr := wsReadCheck(ctx, &wg, wsc.conn)
+	// send Stream of watch events to the ws c.connection
+	ch := sendWatchInfo(ctx, &wg, wsc, params)
 	// If wsReadCheck returns it means that it is not possible to check
 	// ws heartbeat anymore so we stop from doing Console Log, cancel context
 	// for all goroutines.
@@ -59,12 +91,11 @@ func startWatch(conn WSConn, client MinioAdmin) (mError error) {
 		cancel()
 	}(&wg)
 
-	// get logCh err on finish
-	if err := <-logCh; err != nil {
+	if err := <-ch; err != nil {
 		mError = err
 	}
 
-	// if logCh closes for any reason,
+	// if ch closes for any reason,
 	// cancel context for all goroutines
 	cancel()
 	// wait all goroutines to finish
@@ -72,70 +103,55 @@ func startWatch(conn WSConn, client MinioAdmin) (mError error) {
 	return mError
 }
 
-// sendlogInfo sends stream of Console Log Info to the ws connection
-func sendConsoleLogInfo(ctx context.Context, wg *sync.WaitGroup, conn WSConn, client MinioAdmin) <-chan error {
+// sendWatchInfo sends stream of Watch Event to the ws connection
+func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, wsc *wsS3Client, params watchParams) <-chan error {
 	// decrements the WaitGroup counter
 	// by one when the function returns
 	defer wg.Done()
 	ch := make(chan error)
 	go func(ch chan<- error) {
 		defer close(ch)
-
-		// TODO: accept parameters as variables
-		// name of node, default = "" (all)
-		node := ""
-		// number of log lines
-		lineCount := 100
-		// type of logs "minio"|"application"|"all" default = "all"
-		logKind := "all"
-		// Start listening on all Console Log activity.
-		logCh := client.getLogs(ctx, node, lineCount, logKind)
-
-		for logInfo := range logCh {
-			if logInfo.Err != nil {
-				log.Println("error on console logs:", logInfo.Err)
-				ch <- logInfo.Err
+		wo, err := wsc.client.watch(params.WatchParams)
+		for {
+			select {
+			case <-ctx.Done():
+				wo.Close()
 				return
-			}
+			case events, ok := <-wo.Events():
+				// zero value returned because the channel is closed and empty
+				if !ok {
+					return
+				}
+				for _, event := range events {
+					// Serialize message to be sent
+					bytes, err := json.Marshal(event)
+					if err != nil {
+						fmt.Println("error on json.Marshal:", err)
+						ch <- err
+						return
+					}
+					// Send Message through websocket connection
+					err = wsc.conn.writeMessage(websocket.TextMessage, bytes)
+					if err != nil {
+						log.Println("error writeMessage:", err)
+						ch <- err
+						return
+					}
+				}
+			case pErr, ok := <-wo.Errors():
+				// zero value returned because the channel is closed and empty
+				if !ok {
+					return
+				}
+				if err != nil {
+					log.Println("error on watch:", pErr.Cause)
+					ch <- pErr.Cause
+					return
 
-			// Serialize message to be sent
-			bytes, err := json.Marshal(serializeConsoleLogInfo(&logInfo))
-			if err != nil {
-				fmt.Println("error on json.Marshal:", err)
-				ch <- err
-				return
-			}
-
-			// Send Message through websocket connection
-			err = conn.writeMessage(websocket.TextMessage, bytes)
-			if err != nil {
-				log.Println("error writeMessage:", err)
-				ch <- err
-				return
+				}
 			}
 		}
 	}(ch)
 
 	return ch
-}
-
-func serializeConsoleLogInfo(l *madmin.LogInfo) (logInfo madmin.LogInfo) {
-	logInfo = *l
-	if logInfo.ConsoleMsg != "" {
-		if strings.HasPrefix(logInfo.ConsoleMsg, "\n") {
-			logInfo.ConsoleMsg = strings.TrimPrefix(logInfo.ConsoleMsg, "\n")
-		}
-	}
-	if logInfo.Time != "" {
-		logInfo.Time = getLogTime(logInfo.Time)
-	}
-	return logInfo
-}
-
-func getLogTime(lt string) string {
-	tm, err := time.Parse(time.RFC3339Nano, lt)
-	if err != nil {
-		return lt
-	}
-	return tm.Format(logTimeFormat)
 }

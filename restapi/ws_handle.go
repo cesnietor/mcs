@@ -21,8 +21,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -64,7 +62,7 @@ type wsAdminClient struct {
 
 // MCSWebsocket interface of a Websocket Client
 type MCSWebsocket interface {
-	watch(bucketName string, events []string, prefix, suffix string)
+	watch(params watchParams)
 }
 
 type wsS3Client struct {
@@ -161,46 +159,18 @@ func serveWS(w http.ResponseWriter, req *http.Request) {
 		}
 		go wsAdminClient.console()
 	case strings.HasPrefix(wsPath, `/watch`):
-		bucketName, events, prefix, suffix := getParamsFromWsWatchPath(wsPath)
-		wsS3Client, err := newWebSocketS3Client(conn, *sessionID, bucketName)
+		wParams := getParamsFromWsWatchPath(wsPath)
+		wsS3Client, err := newWebSocketS3Client(conn, *sessionID, wParams.BucketName)
 		if err != nil {
 			errors.ServeError(w, req, err)
 			return
 		}
-		go wsS3Client.watch(bucketName, events, prefix, suffix)
+		go wsS3Client.watch(wParams)
 	default:
 		// path not found
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 		conn.Close()
 	}
-}
-
-// getParamsFromWsWatchPath gets bucket name, events, prefix, suffix from a websocket
-// watch path if defined.
-// The path should come as : `/watch/bucket1?prefix=&suffix=.jpg&events=put,get`
-func getParamsFromWsWatchPath(wsPath string) (bucketName string, events []string, prefix, suffix string) {
-	re := regexp.MustCompile(`(^/watch/)(.*?)(\?.*?$|$)`)
-	matches := re.FindAll([]byte(wsPath), -1)
-	// matches comes as e.g.
-	// [["/watch/bucket1?prefix=&suffix=.jpg&events=put,get" "/watch/" "bucket1" "?prefix=&suffix=.jpg&events=put,get"]]
-	// [["/watch/bucket1" "/watch/" "bucket1" ""]]
-	// [["/watch/" "/watch/" "" ""]]
-	if len(matches[0]) > 2 {
-		// bucket name is on the second group, third position
-		bucketName := strings.TrimSpace(string(matches[0][2]))
-	}
-	// if matched query params (comes in third group) fourth position
-	if len(matches[0]) > 3 {
-		// get query params from path
-		q, err := url.ParseQuery(strings.TrimPrefix("?", string(matches[0][3])))
-		if err != nil {
-			log.Fatal(err)
-		}
-		events = strings.Split(q.Get("events"), ",")
-		prefix = q.Get("prefix")
-		suffix = q.Get("suffix")
-	}
-	return bucketName, events, prefix, suffix
 }
 
 // newWebSocketAdminClient returns a wsAdminClient authenticated as an admin user
@@ -339,7 +309,7 @@ func (wsc *wsAdminClient) console() {
 	}()
 	log.Println("console logs started")
 
-	err := startWatch(wsc.conn, wsc.client)
+	err := startConsoleLog(wsc.conn, wsc.client)
 	// Send Connection Close Message indicating the Status Code
 	// see https://tools.ietf.org/html/rfc6455#page-45
 	if err != nil {
@@ -360,6 +330,32 @@ func (wsc *wsAdminClient) console() {
 	wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 }
 
-func (wsc *wsS3Client) watch(bucketName string, events []string, prefix, suffix string) {
+func (wsc *wsS3Client) watch(params watchParams) {
+	defer func() {
+		log.Println("watch stopped")
+		// close connection after return
+		wsc.conn.close()
+	}()
+	log.Println("watch started")
+
+	err := startWatch(wsc, params)
+	// Send Connection Close Message indicating the Status Code
+	// see https://tools.ietf.org/html/rfc6455#page-45
+	if err != nil {
+		// If connection exceeded read deadline send Close
+		// Message Policy Violation code since we don't want
+		// to let the receiver figure out the read deadline.
+		// This is a generic code designed if there is a
+		// need to hide specific details about the policy.
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, ""))
+			return
+		}
+		// else, internal server error
+		wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
+		return
+	}
+	// normal closure
+	wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
 }

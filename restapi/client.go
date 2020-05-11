@@ -92,7 +92,7 @@ func (c minioClient) getBucketPolicy(bucketName string) (string, error) {
 type MCS3Client interface {
 	addNotificationConfig(arn string, events []string, prefix, suffix string, ignoreExisting bool) *probe.Error
 	removeNotificationConfig(arn string, event string, prefix string, suffix string) *probe.Error
-	trace(params mc.WatchParams) (*mc.WatchObject, *probe.Error)
+	watch(params mc.WatchParams) (*mc.WatchObject, *probe.Error)
 }
 
 // Interface implementation
@@ -113,7 +113,7 @@ func (c mcS3Client) removeNotificationConfig(arn string, event string, prefix st
 	return c.client.RemoveNotificationConfig(arn, event, prefix, suffix)
 }
 
-func (c mcS3Client) trace(params mc.WatchParams) (*mc.WatchObject, *probe.Error) {
+func (c mcS3Client) watch(params mc.WatchParams) (*mc.WatchObject, *probe.Error) {
 	return c.client.Watch(params)
 }
 

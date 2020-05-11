@@ -41,7 +41,7 @@ func (mc minioClientMock) getBucketNotification(bucketName string) (bucketNotifi
 //// Mock mc S3Client functions ////
 var mcAddNotificationConfigMock func(arn string, events []string, prefix, suffix string, ignoreExisting bool) *probe.Error
 var mcRemoveNotificationConfigMock func(arn string, event string, prefix string, suffix string) *probe.Error
-var mcTraceMock func(params mc.WatchParams) (*mc.WatchObject, *probe.Error)
+var mcWatchMock func(params mc.WatchParams) (*mc.WatchObject, *probe.Error)
 
 // Define a mock struct of mc S3Client interface implementation
 type s3ClientMock struct {
@@ -58,8 +58,8 @@ func (c s3ClientMock) removeNotificationConfig(arn string, event string, prefix 
 }
 
 // implements mc.S3Client.Watch()
-func (c s3ClientMock) trace(params mc.WatchParams) (*mc.WatchObject, *probe.Error) {
-	return mcTraceMock(params)
+func (c s3ClientMock) watch(params mc.WatchParams) (*mc.WatchObject, *probe.Error) {
+	return mcWatchMock(params)
 }
 
 func TestAddBucketNotification(t *testing.T) {
