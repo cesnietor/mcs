@@ -213,8 +213,6 @@ func newMinioClient(jwt string) (*minio.Client, error) {
 // newS3BucketClient creates a new mc S3Client to talk to the server based on a bucket
 func newS3BucketClient(jwt string, bucketName string) (*mc.S3Client, error) {
 	endpoint := getMinIOServer()
-	// accessKeyID := getAccessKey()
-	// secretAccessKey := getSecretKey()
 	useSSL := getMinIOEndpointIsSecure()
 
 	claims, err := auth.JWTAuthenticate(jwt)
