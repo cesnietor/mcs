@@ -62,7 +62,7 @@ type wsAdminClient struct {
 
 // MCSWebsocket interface of a Websocket Client
 type MCSWebsocket interface {
-	watch(params watchParams)
+	watch(options watchOptions)
 }
 
 type wsS3Client struct {
@@ -159,13 +159,17 @@ func serveWS(w http.ResponseWriter, req *http.Request) {
 		}
 		go wsAdminClient.console()
 	case strings.HasPrefix(wsPath, `/watch`):
-		wParams := getParamsFromWsWatchPath(wsPath)
-		wsS3Client, err := newWebSocketS3Client(conn, *sessionID, wParams.BucketName)
+		wOptions, err := getOptionsFromWsWatchPath(wsPath)
 		if err != nil {
 			errors.ServeError(w, req, err)
 			return
 		}
-		go wsS3Client.watch(wParams)
+		wsS3Client, err := newWebSocketS3Client(conn, *sessionID, wOptions.BucketName)
+		if err != nil {
+			errors.ServeError(w, req, err)
+			return
+		}
+		go wsS3Client.watch(wOptions)
 	default:
 		// path not found
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -330,7 +334,7 @@ func (wsc *wsAdminClient) console() {
 	wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 }
 
-func (wsc *wsS3Client) watch(params watchParams) {
+func (wsc *wsS3Client) watch(params watchOptions) {
 	defer func() {
 		log.Println("watch stopped")
 		// close connection after return
@@ -338,7 +342,7 @@ func (wsc *wsS3Client) watch(params watchParams) {
 	}()
 	log.Println("watch started")
 
-	err := startWatch(wsc, params)
+	err := startWatch(wsc.conn, wsc.client, params)
 	// Send Connection Close Message indicating the Status Code
 	// see https://tools.ietf.org/html/rfc6455#page-45
 	if err != nil {
@@ -357,5 +361,4 @@ func (wsc *wsS3Client) watch(params watchParams) {
 	}
 	// normal closure
 	wsc.conn.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-
 }

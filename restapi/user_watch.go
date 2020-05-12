@@ -30,41 +30,18 @@ import (
 	mc "github.com/minio/mc/cmd"
 )
 
-type watchParams struct {
+type watchOptions struct {
 	BucketName string
-	mc.WatchParams
+	mc.WatchOptions
 }
 
-// getParamsFromWsWatchPath gets bucket name, events, prefix, suffix from a websocket
-// watch path if defined.
-// The path should come as : `/watch/bucket1?prefix=&suffix=.jpg&events=put,get`
-func getParamsFromWsWatchPath(wsPath string) watchParams {
-	wParams := watchParams{}
-	re := regexp.MustCompile(`(^/watch/)(.*?)(\?.*?$|$)`)
-	matches := re.FindAll([]byte(wsPath), -1)
-	// matches comes as e.g.
-	// [["...", "/watch/" "bucket1" "?prefix=&suffix=.jpg&events=put,get"]]
-	// [["/watch/bucket1" "/watch/" "bucket1" ""]]
-	// [["/watch/" "/watch/" "" ""]]
-	if len(matches[0]) > 2 {
-		// bucket name is on the second group, third position
-		wParams.BucketName = strings.TrimSpace(string(matches[0][2]))
-	}
-	// if matched query params (comes in third group) get fourth position
-	if len(matches[0]) > 3 {
-		q, err := url.ParseQuery(strings.TrimPrefix("?", string(matches[0][3])))
-		if err != nil {
-			log.Fatal(err)
-		}
-		wParams.Events = strings.Split(q.Get("events"), ",")
-		wParams.Prefix = q.Get("prefix")
-		wParams.Suffix = q.Get("suffix")
-	}
-	return wParams
-}
-
-// startWatch
-func startWatch(wsc *wsS3Client, params watchParams) (mError error) {
+// startWatch starts by setting a websocket reader that
+// will check for a heartbeat.
+//
+// A WaitGroup is used to handle goroutines and to ensure
+// all finish in the proper order. If any, sendWatchInfo()
+// or wsReadCheck() returns, watch should end.
+func startWatch(conn WSConn, client MCS3Client, options watchOptions) (mError error) {
 	// a WaitGroup waits for a collection of goroutines to finish
 	wg := sync.WaitGroup{}
 	// a cancel context is needed to end all goroutines used
@@ -75,11 +52,11 @@ func startWatch(wsc *wsS3Client, params watchParams) (mError error) {
 	// waits until counter is zero (all are done)
 	wg.Add(3)
 	// start go routine for reading websocket heartbeat
-	readErr := wsReadCheck(ctx, &wg, wsc.conn)
+	readErr := wsReadCheck(ctx, &wg, conn)
 	// send Stream of watch events to the ws c.connection
-	ch := sendWatchInfo(ctx, &wg, wsc, params)
+	ch := sendWatchInfo(ctx, &wg, conn, client, options)
 	// If wsReadCheck returns it means that it is not possible to check
-	// ws heartbeat anymore so we stop from doing Console Log, cancel context
+	// ws heartbeat anymore so we stop from doing Watch, cancel context
 	// for all goroutines.
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -104,18 +81,23 @@ func startWatch(wsc *wsS3Client, params watchParams) (mError error) {
 }
 
 // sendWatchInfo sends stream of Watch Event to the ws connection
-func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, wsc *wsS3Client, params watchParams) <-chan error {
+func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, conn WSConn, wsc MCS3Client, options watchOptions) <-chan error {
 	// decrements the WaitGroup counter
 	// by one when the function returns
 	defer wg.Done()
 	ch := make(chan error)
 	go func(ch chan<- error) {
 		defer close(ch)
-		wo, err := wsc.client.watch(params.WatchParams)
+		wo, pErr := wsc.watch(options.WatchOptions)
+		if pErr != nil {
+			fmt.Println("error initializing watch:", pErr.Cause)
+			ch <- pErr.Cause
+			return
+		}
 		for {
 			select {
 			case <-ctx.Done():
-				wo.Close()
+				close(wo.DoneChan)
 				return
 			case events, ok := <-wo.Events():
 				// zero value returned because the channel is closed and empty
@@ -131,7 +113,7 @@ func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, wsc *wsS3Client, par
 						return
 					}
 					// Send Message through websocket connection
-					err = wsc.conn.writeMessage(websocket.TextMessage, bytes)
+					err = conn.writeMessage(websocket.TextMessage, bytes)
 					if err != nil {
 						log.Println("error writeMessage:", err)
 						ch <- err
@@ -143,7 +125,7 @@ func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, wsc *wsS3Client, par
 				if !ok {
 					return
 				}
-				if err != nil {
+				if pErr != nil {
 					log.Println("error on watch:", pErr.Cause)
 					ch <- pErr.Cause
 					return
@@ -152,6 +134,38 @@ func sendWatchInfo(ctx context.Context, wg *sync.WaitGroup, wsc *wsS3Client, par
 			}
 		}
 	}(ch)
-
 	return ch
+}
+
+// getOptionsFromWsWatchPath gets bucket name, events, prefix, suffix from a websocket
+// watch path if defined.
+// path come as : `/watch/bucket1?prefix=&suffix=.jpg&events=put,get`
+func getOptionsFromWsWatchPath(wsPath string) (watchOptions, error) {
+	wOptions := watchOptions{}
+	// Default Events if not defined
+	wOptions.Events = []string{"put", "get", "delete"}
+
+	re := regexp.MustCompile(`(^/watch/)(.*?)(\?.*?$|$)`)
+	matches := re.FindAllSubmatch([]byte(wsPath), -1)
+	// len matches is always 4
+	// matches comes as e.g.
+	// [["...", "/watch/" "bucket1" "?prefix=&suffix=.jpg&events=put,get"]]
+	// [["/watch/bucket1" "/watch/" "bucket1" ""]]
+	// [["/watch/" "/watch/" "" ""]]
+
+	// bucket name is on the second group, third position
+	wOptions.BucketName = strings.TrimSpace(string(matches[0][2]))
+	// if matched query params (comes in third group) get fourth position
+	q, err := url.ParseQuery(strings.TrimPrefix(string(matches[0][3]), "?"))
+	if err != nil {
+		return watchOptions{}, err
+	}
+	events := q.Get("events")
+	if strings.TrimSpace(events) != "" {
+		evs := strings.Split(events, ",")
+		wOptions.Events = evs
+	}
+	wOptions.Prefix = q.Get("prefix")
+	wOptions.Suffix = q.Get("suffix")
+	return wOptions, nil
 }

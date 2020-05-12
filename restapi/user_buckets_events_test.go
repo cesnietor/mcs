@@ -23,7 +23,6 @@ import (
 	"errors"
 
 	"github.com/go-openapi/swag"
-	mc "github.com/minio/mc/cmd"
 	"github.com/minio/mc/pkg/probe"
 	"github.com/minio/mcs/models"
 	"github.com/minio/minio-go/v6"
@@ -41,7 +40,6 @@ func (mc minioClientMock) getBucketNotification(bucketName string) (bucketNotifi
 //// Mock mc S3Client functions ////
 var mcAddNotificationConfigMock func(arn string, events []string, prefix, suffix string, ignoreExisting bool) *probe.Error
 var mcRemoveNotificationConfigMock func(arn string, event string, prefix string, suffix string) *probe.Error
-var mcWatchMock func(params mc.WatchParams) (*mc.WatchObject, *probe.Error)
 
 // Define a mock struct of mc S3Client interface implementation
 type s3ClientMock struct {
@@ -55,11 +53,6 @@ func (c s3ClientMock) addNotificationConfig(arn string, events []string, prefix,
 // implements mc.S3Client.DeleteBucketEventNotification()
 func (c s3ClientMock) removeNotificationConfig(arn string, event string, prefix string, suffix string) *probe.Error {
 	return mcRemoveNotificationConfigMock(arn, event, prefix, suffix)
-}
-
-// implements mc.S3Client.Watch()
-func (c s3ClientMock) watch(params mc.WatchParams) (*mc.WatchObject, *probe.Error) {
-	return mcWatchMock(params)
 }
 
 func TestAddBucketNotification(t *testing.T) {
