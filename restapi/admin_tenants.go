@@ -218,15 +218,18 @@ func deleteTenantAction(
 	return nil
 }
 
-func getTenantScheme(mi *operator.Tenant) string {
-	scheme := "http"
+// getTenantSchemeNPort gets tenant scheme and port depending for a particular tenant
+func getTenantSchemeNPort(mi *operator.Tenant) (scheme, port string) {
+	scheme = "http"
+	port = strconv.Itoa(operator.MinIOPortLoadBalancerSVC)
 	if mi.AutoCert() || mi.ExternalCert() {
 		scheme = "https"
+		port = strconv.Itoa(operator.MinIOTLSPortLoadBalancerSVC)
 	}
-	return scheme
+	return scheme, port
 }
 
-func getTenantAdminClient(ctx context.Context, client K8sClientI, namespace, tenantName, serviceName, scheme string, insecure bool) (*madmin.AdminClient, error) {
+func getTenantAdminClient(ctx context.Context, client K8sClientI, namespace, tenantName, serviceName, scheme, port string, insecure bool) (*madmin.AdminClient, error) {
 	// get admin credentials from secret
 	creds, err := client.getSecret(ctx, namespace, fmt.Sprintf("%s-secret", tenantName), metav1.GetOptions{})
 	if err != nil {
@@ -242,7 +245,7 @@ func getTenantAdminClient(ctx context.Context, client K8sClientI, namespace, ten
 		log.Println("tenant's secret doesn't contain secretkey")
 		return nil, errorGeneric
 	}
-	mAdmin, pErr := NewAdminClientWithInsecure(scheme+"://"+net.JoinHostPort(serviceName, strconv.Itoa(operator.MinIOPort)), string(accessKey), string(secretkey), insecure)
+	mAdmin, pErr := NewAdminClientWithInsecure(scheme+"://"+net.JoinHostPort(serviceName, port), string(accessKey), string(secretkey), insecure)
 	if pErr != nil {
 		return nil, pErr.Cause
 	}
@@ -872,7 +875,7 @@ func updateTenantAction(ctx context.Context, operatorClient OperatorClientI, cli
 		prometheusPort:   fmt.Sprint(operator.MinIOPort),
 		prometheusScrape: "true",
 	}
-	if params.Body.EnablePrometheus && minInst.Spec.Metadata != nil && currentAnnotations != nil {
+	if params.Body.EnablePrometheus && currentAnnotations != nil {
 		// add prometheus annotations to the tenant
 		minInst.Annotations = addAnnotations(currentAnnotations, prometheusAnnotations)
 		// add prometheus annotations to the each zone
@@ -1019,7 +1022,7 @@ func getTenantUsageResponse(session *models.Principal, params admin_api.GetTenan
 		return nil, prepareError(err, errorUnableToGetTenantUsage)
 	}
 	minTenant.EnsureDefaults()
-	tenantScheme := getTenantScheme(minTenant)
+	tenantScheme, port := getTenantSchemeNPort(minTenant)
 
 	svcName := fmt.Sprintf("%s.%s.svc.cluster.local", minTenant.MinIOCIServiceName(), minTenant.Namespace)
 
@@ -1029,6 +1032,7 @@ func getTenantUsageResponse(session *models.Principal, params admin_api.GetTenan
 		params.Namespace,
 		params.Tenant,
 		svcName,
+		port,
 		tenantScheme,
 		true)
 	if err != nil {

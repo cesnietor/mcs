@@ -93,6 +93,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 		tenantName  string
 		serviceName string
 		scheme      string
+		port        string
 		insecure    bool
 	}
 	tests := []struct {
@@ -111,6 +112,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 				tenantName:  "tenant-1",
 				serviceName: "service-1",
 				scheme:      "http",
+				port:        "80",
 			},
 			mockGetSecret: func(ctx context.Context, namespace, secretName string, opts metav1.GetOptions) (*corev1.Secret, error) {
 				vals := make(map[string][]byte)
@@ -140,6 +142,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 				tenantName:  "tenant-1",
 				serviceName: "service-1",
 				scheme:      "http",
+				port:        "80",
 			},
 			mockGetSecret: func(ctx context.Context, namespace, secretName string, opts metav1.GetOptions) (*corev1.Secret, error) {
 				vals := make(map[string][]byte)
@@ -168,6 +171,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 				tenantName:  "tenant-1",
 				serviceName: "service-1",
 				scheme:      "http",
+				port:        "80",
 			},
 			mockGetSecret: func(ctx context.Context, namespace, secretName string, opts metav1.GetOptions) (*corev1.Secret, error) {
 				vals := make(map[string][]byte)
@@ -196,6 +200,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 				tenantName:  "tenant-1",
 				serviceName: "service-1",
 				scheme:      "http",
+				port:        "80",
 			},
 			mockGetSecret: func(ctx context.Context, namespace, secretName string, opts metav1.GetOptions) (*corev1.Secret, error) {
 				vals := make(map[string][]byte)
@@ -220,6 +225,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 				tenantName:  "tenant-1",
 				serviceName: "service-1",
 				scheme:      "http",
+				port:        "80",
 			},
 			mockGetSecret: func(ctx context.Context, namespace, secretName string, opts metav1.GetOptions) (*corev1.Secret, error) {
 				return nil, errors.New("error")
@@ -239,7 +245,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 		k8sclientGetSecretMock = tt.mockGetSecret
 		k8sclientGetServiceMock = tt.mockGetService
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getTenantAdminClient(tt.args.ctx, tt.args.client, tt.args.namespace, tt.args.tenantName, tt.args.serviceName, tt.args.scheme, tt.args.insecure)
+			got, err := getTenantAdminClient(tt.args.ctx, tt.args.client, tt.args.namespace, tt.args.tenantName, tt.args.serviceName, tt.args.scheme, tt.args.port, tt.args.insecure)
 			if err != nil {
 				if tt.wantErr {
 					return
