@@ -17,7 +17,7 @@ require (
 	github.com/minio/cli v1.22.0
 	github.com/minio/kes v0.11.0
 	github.com/minio/mc v0.0.0-20201119214335-d4f9ea859d6c
-	github.com/minio/minio v0.0.0-20201102034248-d8e07f2c41c8
+	github.com/minio/minio v0.0.0-20201122074850-39f3d5493bc9
 	github.com/minio/minio-go/v7 v7.0.6-0.20201119032702-6914cb678dde
 	github.com/minio/operator v0.0.0-20201022162018-527e5c32132b
 	github.com/mitchellh/go-homedir v1.1.0
@@ -33,3 +33,5 @@ require (
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
 )
+
+replace github.com/minio/mc => github.com/alevsk/mc v0.0.0-20201128010702-4195fe7e1123

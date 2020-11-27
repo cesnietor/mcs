@@ -126,6 +126,8 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuy
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
+github.com/alevsk/mc v0.0.0-20201128010702-4195fe7e1123 h1:FX8vLAVJmatZmewZqNVZvtNWjM1gpI8wTnx9GDPKF1Q=
+github.com/alevsk/mc v0.0.0-20201128010702-4195fe7e1123/go.mod h1:CmW2I1A9Xed8rZLji1+bBga1aCrjby2ENJdhytAkYk0=
 github.com/apex/log v1.1.4/go.mod h1:AlpoD9aScyQfJDVHmLMEcx4oU6LqzkWp4Mg9GdAcEvQ=
 github.com/apex/log v1.3.0/go.mod h1:jd8Vpsr46WAe3EZSQ/IUMs2qQD/GOycT5rPWCO1yGcs=
 github.com/apex/logs v0.0.4/go.mod h1:XzxuLZ5myVHDy9SAmYpamKKRNApGj54PfYLcFrXqDwo=
@@ -156,6 +158,7 @@ github.com/aws/aws-sdk-go v1.31.6/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZveU
 github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59/go.mod h1:q/89r3U2H7sSsE2t6Kca0lfwTK8JdoNGS/yzM/4iH5I=
 github.com/bcicen/jstream v0.0.0-20190220045926-16c1f8af81c2 h1:M+TYzBcNIRyzPRg66ndEqUMd7oWDmhvdQmaPC6EZNwM=
 github.com/bcicen/jstream v0.0.0-20190220045926-16c1f8af81c2/go.mod h1:RDu/qcrnpEdJC/p8tx34+YBFqqX71lB7dOX9QE+ZC4M=
+github.com/bcicen/jstream v1.0.1/go.mod h1:9ielPxqFry7Y4Tg3j4BfjPocfJ3TbsRtXOAYXYmRuAQ=
 github.com/beevik/ntp v0.2.0/go.mod h1:hIHWr+l3+/clUnF44zdK+CWW7fO8dR5cIylAQ76NRpg=
 github.com/beevik/ntp v0.3.0 h1:xzVrPrE4ziasFXgBVBZJDP0Wg/KpMwk2KHJ4Ba8GrDw=
 github.com/beevik/ntp v0.3.0/go.mod h1:hIHWr+l3+/clUnF44zdK+CWW7fO8dR5cIylAQ76NRpg=
@@ -757,16 +760,14 @@ github.com/minio/highwayhash v1.0.0 h1:iMSDhgUILCr0TNm8LWlSjF8N0ZIj2qbO8WHp6Q/J2
 github.com/minio/highwayhash v1.0.0/go.mod h1:xQboMTeM9nY9v/LlAOxFctujiv5+Aq2hR5dxBpaMbdc=
 github.com/minio/kes v0.11.0 h1:8ma6OCVSxKT50b1uYXLJro3m7PmZtCLxBaTddQexI5k=
 github.com/minio/kes v0.11.0/go.mod h1:mTF1Bv8YVEtQqF/B7Felp4tLee44Pp+dgI0rhCvgNg8=
-github.com/minio/mc v0.0.0-20201119214335-d4f9ea859d6c h1:/wGiTfC8pFOC2JzwE+XrPeH31LqFR/Dam4Lx1zX3Wag=
-github.com/minio/mc v0.0.0-20201119214335-d4f9ea859d6c/go.mod h1:B738ZPTRQiyp3uJ3p2W2mqk8Yp1puYASKY7GIhYyHP8=
 github.com/minio/md5-simd v1.1.0 h1:QPfiOqlZH+Cj9teu0t9b1nTBfPbyTl16Of5MeuShdK4=
 github.com/minio/md5-simd v1.1.0/go.mod h1:XpBqgZULrMYD3R+M28PcmP0CkI7PEMzB3U77ZrKZ0Gw=
 github.com/minio/minio v0.0.0-20200723003940-b9be841fd222/go.mod h1:Eu2KC2p+vW03rnYY/6R/D+QduPB7/j4kBaVA/EDLjWM=
-github.com/minio/minio v0.0.0-20201102034248-d8e07f2c41c8 h1:yCDFjUBUoE1uNr8dEqjHuwySdAtOyvVONchEVrPPOGQ=
-github.com/minio/minio v0.0.0-20201102034248-d8e07f2c41c8/go.mod h1:640kMkCwiyOX8dheptHYModdUw4HrnUFHKw3McqUXD8=
+github.com/minio/minio v0.0.0-20201122074850-39f3d5493bc9 h1:WdX6LYHNgZc0XwTPknEYSi/BrTgK2kacNj1UJI+Beew=
+github.com/minio/minio v0.0.0-20201122074850-39f3d5493bc9/go.mod h1:uqJmu8JpophzxppX+ZwQon8MkNq6w/Z67qqImn5cwJc=
 github.com/minio/minio-go/v7 v7.0.1/go.mod h1:dJ80Mv2HeGkYLH1sqS/ksz07ON6csH3S6JUMSQ2zAns=
 github.com/minio/minio-go/v7 v7.0.2/go.mod h1:dJ80Mv2HeGkYLH1sqS/ksz07ON6csH3S6JUMSQ2zAns=
-github.com/minio/minio-go/v7 v7.0.6-0.20200929220449-755b5633803a/go.mod h1:CSt2ETZNs+bIIhWTse0mcZKZWMGrFU7Er7RR0TmkDYk=
+github.com/minio/minio-go/v7 v7.0.6-0.20201118225257-f6869a5e2a6a/go.mod h1:HcIuq+11d/3MfavIPZiswSzfQ1VJ2Lwxp/XLtW46IWQ=
 github.com/minio/minio-go/v7 v7.0.6-0.20201119032702-6914cb678dde h1:Ag2kFFpCxct9ayux92WQUlT938y7+IbibERYOraT8dM=
 github.com/minio/minio-go/v7 v7.0.6-0.20201119032702-6914cb678dde/go.mod h1:HcIuq+11d/3MfavIPZiswSzfQ1VJ2Lwxp/XLtW46IWQ=
 github.com/minio/operator v0.0.0-20201022162018-527e5c32132b h1:ggfD6V3nodTzhHJHCYIT1F897gscrz+hHsan0a2Wtqw=
@@ -957,6 +958,9 @@ github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAm
 github.com/shirou/gopsutil v0.0.0-20190901111213-e4ec7b275ada/go.mod h1:WWnYX4lzhCH5h/3YBfyVA3VbLYjlMZZAQcW9ojMexNc=
 github.com/shirou/gopsutil v2.20.3-0.20200314133625-53cec6b37e6a+incompatible h1:YiKUe2ZOmfpDBH4OSyxwkx/mjNqHHnNhOtZ2mPyRme8=
 github.com/shirou/gopsutil v2.20.3-0.20200314133625-53cec6b37e6a+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
+github.com/shirou/gopsutil v2.20.9+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
+github.com/shirou/gopsutil v2.20.10-0.20201015215925-32d4603d01b7+incompatible h1:4Nw/OaZkO6z7Tj2V48FQkGcVESBvJmKvj+SLKugM6x8=
+github.com/shirou/gopsutil v2.20.10-0.20201015215925-32d4603d01b7+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
 github.com/shurcooL/go v0.0.0-20180423040247-9e1955d9fb6e/go.mod h1:TDJrrUr11Vxrven61rcy3hJMUqaf/CLWYhHNPmT14Lk=
 github.com/shurcooL/go-goon v0.0.0-20170922171312-37c2f522c041/go.mod h1:N5mDOmsrJOB+vfqUK+7DmDyjhSLIIBnXo9lvZJj3MWQ=
@@ -1043,7 +1047,6 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 h1:LnC5Kc
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tommy-muehle/go-mnd v1.1.1/go.mod h1:dSUh0FtTP8VhvkL1S+gUR1OKd9ZnSaozuI6r3m6wOig=
 github.com/tommy-muehle/go-mnd v1.3.1-0.20200224220436-e6f9a994e8fa/go.mod h1:dSUh0FtTP8VhvkL1S+gUR1OKd9ZnSaozuI6r3m6wOig=
-github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31/go.mod h1:onvgF043R+lC5RZ8IT9rBXDaEDnpnw/Cl+HFiw+v/7Q=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
