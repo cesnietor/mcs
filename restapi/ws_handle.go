@@ -272,7 +272,8 @@ func newWebSocketS3Client(conn *websocket.Conn, claims *models.Principal, namesp
 	}
 
 	svcURL := GetTenantServiceURL(minTenant)
-	s3Client, err := newTenantS3BucketClient(tenantClaims, svcURL, bucketName, minTenant.TLS())
+	// TODO: change isSecure: true to minTenant.TLS() and add support to S3Client to accept custom TLS Transport
+	s3Client, err := newTenantS3BucketClient(tenantClaims, svcURL, bucketName, false)
 	if err != nil {
 		log.Println("error creating S3Client:", err)
 		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
