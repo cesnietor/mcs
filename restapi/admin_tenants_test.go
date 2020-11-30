@@ -253,7 +253,7 @@ func Test_TenantInfoTenantAdminClient(t *testing.T) {
 		k8sclientGetSecretMock = tt.mockGetSecret
 		k8sclientGetServiceMock = tt.mockGetService
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getTenantAdminClient(tt.args.ctx, tt.args.client, &tt.args.tenant, tt.args.serviceURL, tt.args.insecure)
+			got, err := getTenantAdminClient(tt.args.ctx, tt.args.client, &tt.args.tenant, tt.args.serviceURL)
 			if err != nil {
 				if tt.wantErr {
 					return

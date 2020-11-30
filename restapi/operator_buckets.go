@@ -66,13 +66,12 @@ func getOperatorListBucketsResponse(session *models.Principal, namespace, tenant
 	minTenant.EnsureDefaults()
 
 	svcURL := GetTenantServiceURL(minTenant)
-	// TODO: in the feature we need to load all tenants public certificates under ~/.console/certs/CAs to avoid using insecure: true
+	// getTenantAdminClient will use all certificates under ~/.console/certs/CAs to trust the TLS connections with MinIO tenants
 	mAdmin, err := getTenantAdminClient(
 		ctx,
 		k8sClient,
 		minTenant,
-		svcURL,
-		true)
+		svcURL)
 	if err != nil {
 		return nil, prepareError(err)
 	}

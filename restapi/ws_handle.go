@@ -210,13 +210,12 @@ func newWebSocketTenantAdminClient(conn *websocket.Conn, session *models.Princip
 	minTenant.EnsureDefaults()
 
 	svcURL := GetTenantServiceURL(minTenant)
-	// TODO: in the feature we need to load all tenants public certificates under ~/.console/certs/CAs to avoid using insecure: true
+	// getTenantAdminClient will use all certificates under ~/.console/certs/CAs to trust the TLS connections with MinIO tenants
 	mAdmin, err := getTenantAdminClient(
 		ctx,
 		k8sClient,
 		minTenant,
-		svcURL,
-		true)
+		svcURL)
 	if err != nil {
 		return nil, err
 	}
@@ -273,12 +272,11 @@ func newWebSocketS3Client(conn *websocket.Conn, claims *models.Principal, namesp
 	}
 
 	svcURL := GetTenantServiceURL(minTenant)
-
 	s3Client, err := newTenantS3BucketClient(tenantClaims, svcURL, bucketName, minTenant.TLS())
 	if err != nil {
 		log.Println("error creating S3Client:", err)
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		conn.Close()
+		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		_ = conn.Close()
 		return nil, err
 	}
 	// create a websocket connection interface implementation
