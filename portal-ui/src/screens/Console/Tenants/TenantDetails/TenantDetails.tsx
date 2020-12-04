@@ -21,16 +21,15 @@ import {
   modalBasic,
 } from "../../Common/FormComponents/common/styleLibrary";
 import Grid from "@material-ui/core/Grid";
-import { Button } from "@material-ui/core";
+import { Button, IconButton } from "@material-ui/core";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
 import { CreateIcon } from "../../../../icons";
 import TableWrapper from "../../Common/TableWrapper/TableWrapper";
 import Paper from "@material-ui/core/Paper";
 import { niceBytes } from "../../../../common/utils";
+import EditImageModal from "./EditImageModal";
 import AddZoneModal from "./AddZoneModal";
-import AddBucket from "../../Buckets/ListBuckets/AddBucket";
-import ReplicationSetup from "./ReplicationSetup";
 import api from "../../../../common/api";
 import { ITenant, IZone } from "../ListTenants/types";
 import Logs from "./Logs/Logs";
@@ -38,6 +37,7 @@ import Trace from "./Trace/Trace";
 import Watch from "./Watch/Watch";
 import Heal from "./Heal/Heal";
 import PageHeader from "../../Common/PageHeader/PageHeader";
+import EditIcon from "@material-ui/icons/Edit";
 
 interface ITenantDetailsProps {
   classes: any;
@@ -93,6 +93,9 @@ const styles = (theme: Theme) =>
     actionsTray: {
       textAlign: "right",
     },
+    editIcon: {
+      padding: "1px 0px 3px 8px",
+    },
     ...modalBasic,
     ...containerForHeader(theme.spacing(4)),
   });
@@ -105,25 +108,20 @@ const TenantDetails = ({ classes, match }: ITenantDetailsProps) => {
   const [instances, setInstances] = useState<number>(0);
   const [volumes, setVolumes] = useState<number>(0);
   const [addZoneOpen, setAddZone] = useState<boolean>(false);
-  const [addBucketOpen, setAddBucketOpen] = useState<boolean>(false);
-  const [addReplicationOpen, setAddReplicationOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [tenant, setTenant] = useState<ITenant | null>(null);
+  const [editImagesOpen, setEditImagesOpen] = useState<boolean>(false);
 
-  const onCloseZoneAndRefresh = (reload: boolean) => {
-    setAddZone(false);
+  const onCloseEditImages = (reload: boolean) => {
+    setEditImagesOpen(false);
 
     if (reload) {
       console.log("reload");
     }
   };
 
-  const closeBucketsAndRefresh = () => {
-    setAddBucketOpen(false);
-  };
-
-  const closeReplicationAndRefresh = (reload: boolean) => {
-    setAddReplicationOpen(false);
+  const onCloseZoneAndRefresh = (reload: boolean) => {
+    setAddZone(false);
 
     if (reload) {
       console.log("reload");
@@ -186,16 +184,11 @@ const TenantDetails = ({ classes, match }: ITenantDetailsProps) => {
           tenant={tenant}
         />
       )}
-      {addBucketOpen && (
-        <AddBucket
-          open={addBucketOpen}
-          closeModalAndRefresh={closeBucketsAndRefresh}
-        />
-      )}
-      {addReplicationOpen && (
-        <ReplicationSetup
-          open={addReplicationOpen}
-          closeModalAndRefresh={closeReplicationAndRefresh}
+      {editImagesOpen && tenant !== null && (
+        <EditImageModal
+          open={editImagesOpen}
+          onCloseZoneAndReload={onCloseEditImages}
+          tenant={tenant}
         />
       )}
       <PageHeader label={`Tenant > ${match.params["tenantName"]}`} />
@@ -215,7 +208,19 @@ const TenantDetails = ({ classes, match }: ITenantDetailsProps) => {
               <div>Capacity:</div>
               <div>{niceBytes(capacity.toString(10))}</div>
               <div>Minio:</div>
-              <div>{tenant ? tenant.image : ""}</div>
+              <div>
+                {tenant ? tenant.image : ""}
+                <IconButton
+                  aria-label="edit"
+                  onClick={() => {
+                    setEditImagesOpen(true);
+                  }}
+                  size="small"
+                  className={classes.editIcon}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </div>
               <div>Clusters:</div>
               <div>{zoneCount}</div>
               <div>Console:</div>
